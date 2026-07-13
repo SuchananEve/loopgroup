@@ -1,5 +1,3 @@
-import React from "react";
-
 /**
  * SmileLoader — ตัวโหลดหน้ายิ้มน่ารัก วาดปากด้วยมือ (draw-in), กระพริบตา, เด้งเบาๆ
  *
@@ -57,7 +55,7 @@ export default function SmileLoader({
           flex-direction: column;
           align-items: center;
           gap: 10px;
-          font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+          font-family: "Mali", system-ui, sans-serif;
         }
 
         .smile-loader-svg {
