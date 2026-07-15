@@ -71,8 +71,8 @@ const HISTORY_POSITIONS = [
   { left: '8%', top: '45%', width: '21%', rotate: '6deg' },
   { left: '40%', top: '41%', width: '25%', rotate: '-6deg' },
   { left: '72%', top: '51%', width: '17%', rotate: '4deg' },
-  { left: '3%', top: '73%', width: '20%', rotate: '7deg' },
-  { left: '57%', top: '72%', width: '17%', rotate: '-5deg' },
+  { left: '3%', top: '57%', width: '20%', rotate: '7deg' },
+  { left: '57%', top: '60%', width: '17%', rotate: '-5deg' },
 ]
 
 function Brand({ onClick }) {
@@ -83,10 +83,17 @@ function Brand({ onClick }) {
   )
 }
 
-function BoothSurface({ historyCards = [] }) {
+function BoothSurface({ historyCards = [], onBoardClick }) {
+  const BoardElement = onBoardClick ? 'button' : 'div'
   return (
-    <div className="booth-surface" role="img" aria-label="ตู้พิมพ์รูป LoopGroup">
-      <div className="stamp-pic-area" aria-hidden="true">
+    <div className="booth-surface" role={onBoardClick ? 'group' : 'img'} aria-label="ตู้พิมพ์รูป LoopGroup">
+      <BoardElement
+        className={`stamp-pic-area ${onBoardClick ? 'is-interactive' : ''}`}
+        type={onBoardClick ? 'button' : undefined}
+        onClick={onBoardClick}
+        aria-label={onBoardClick ? 'Open photo board' : undefined}
+        aria-hidden={onBoardClick ? undefined : true}
+      >
         {historyCards.map((card, index) => {
           const position = HISTORY_POSITIONS[index % HISTORY_POSITIONS.length]
           return (
@@ -104,7 +111,7 @@ function BoothSurface({ historyCards = [] }) {
             </div>
           )
         })}
-      </div>
+      </BoardElement>
       <div className="booth-door" />
       <div className="booth-print-slot" />
     </div>
@@ -141,6 +148,8 @@ function StartPage({ onStart }) {
 
 function TemplatePage({ historyCards, onHome, onSelect }) {
   const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [isCardTrayOpen, setIsCardTrayOpen] = useState(false)
+  const [isBoardOpen, setIsBoardOpen] = useState(false)
   const handleSelect = (template) => {
     if (selectedTemplate) return
 
@@ -152,14 +161,26 @@ function TemplatePage({ historyCards, onHome, onSelect }) {
   }
   return (
     <main className="template-page page-enter">
-      <div className="template-booth-layout" aria-hidden="true">
+      <div className="template-booth-layout">
         <div className="booth-wrap">
-          <BoothSurface historyCards={historyCards} />
+          <BoothSurface historyCards={historyCards} onBoardClick={() => setIsBoardOpen(true)} />
         </div>
       </div>
       <header className="minimal-header"><Brand onClick={onHome} /></header>
-      <section className="template-content">
-        <div className="figma-template-grid">
+      <section
+        id="template-card-tray"
+        className={`template-content ${isCardTrayOpen ? 'is-open' : 'is-closed'}`}
+      >
+        <button
+          className="template-view-toggle"
+          type="button"
+          onClick={() => setIsCardTrayOpen((isOpen) => !isOpen)}
+          aria-expanded={isCardTrayOpen}
+          aria-controls="template-card-options"
+        >
+          {isCardTrayOpen ? 'CLOSE CARDS ↓' : 'CHOOSE A CARD ↑'}
+        </button>
+        <div id="template-card-options" className="figma-template-grid">
           {TEMPLATES.map((template) => (
             <button className={`figma-template ${
                 selectedTemplate?.id === template.id ? 'is-selected' : ''
@@ -177,6 +198,32 @@ function TemplatePage({ historyCards, onHome, onSelect }) {
           ))}
         </div>
       </section>
+      {isBoardOpen && (
+        <div className="photo-board-overlay" role="dialog" aria-modal="true" aria-label="Photo board">
+          <div className="photo-board-expanded">
+            {historyCards.map((card, index) => {
+              const position = HISTORY_POSITIONS[index % HISTORY_POSITIONS.length]
+              return (
+                <div
+                  className={`session-card session-card--${card.templateId}`}
+                  key={card.id}
+                  style={{
+                    left: position.left,
+                    top: position.top,
+                    width: position.width,
+                    transform: `rotate(${position.rotate})`,
+                  }}
+                >
+                  <img src={card.url} alt="" />
+                </div>
+              )
+            })}
+          </div>
+          <button className="photo-board-close" type="button" onClick={() => setIsBoardOpen(false)}>
+            BACK TO PHOTOBOOTH
+          </button>
+        </div>
+      )}
       {selectedTemplate && (
         <div className="template-zoom-overlay" aria-hidden="true">
           <img src={selectedTemplate.asset} alt="" />
