@@ -96,6 +96,15 @@ const FEATURE_LIST = [
 
 const UPDATE_LOG = [
   {
+    date: '18 JUL 2026',
+    version: 'v0.4 — MOBILE RELIABILITY UPDATE',
+    items: [
+      'Filters are now rendered directly into photo pixels for consistent mobile captures.',
+      'Rebuilt Save Image with Blob downloads and the native iOS share sheet.',
+      'Added clear saving, saved, shared, and retry feedback.',
+    ],
+  },
+  {
     date: '15 JUL 2026',
     version: 'v0.3 — THE PLAYFUL BOOTH UPDATE',
     items: [
@@ -183,6 +192,100 @@ function playBoothSound(kind, style = 'CLASSIC', isSilent = false) {
     playTone(context, 95, .5, 'sawtooth', .018)
     playNoise(context, .48, .018)
   }
+}
+
+function clampColor(value) {
+  return Math.max(0, Math.min(255, value))
+}
+
+function applyPhotoFilter(context, width, height, filterId) {
+  if (filterId === 'normal') return
+  const imageData = context.getImageData(0, 0, width, height)
+  const pixels = imageData.data
+
+  for (let index = 0; index < pixels.length; index += 4) {
+    let red = pixels[index]
+    let green = pixels[index + 1]
+    let blue = pixels[index + 2]
+    const gray = .2126 * red + .7152 * green + .0722 * blue
+
+    if (filterId === 'mono') {
+      red = (gray - 128) * 1.14 + 128
+      green = red
+      blue = red
+    } else if (filterId === 'warm' || filterId === 'vintage') {
+      const sepiaAmount = filterId === 'warm' ? .22 : .48
+      const saturation = filterId === 'warm' ? 1.15 : .78
+      const contrast = filterId === 'warm' ? 1.04 : .94
+      const brightness = filterId === 'warm' ? 1.04 : 1.05
+      const sepiaRed = .393 * red + .769 * green + .189 * blue
+      const sepiaGreen = .349 * red + .686 * green + .168 * blue
+      const sepiaBlue = .272 * red + .534 * green + .131 * blue
+      red += (sepiaRed - red) * sepiaAmount
+      green += (sepiaGreen - green) * sepiaAmount
+      blue += (sepiaBlue - blue) * sepiaAmount
+      red = gray + (red - gray) * saturation
+      green = gray + (green - gray) * saturation
+      blue = gray + (blue - gray) * saturation
+      red = ((red - 128) * contrast + 128) * brightness
+      green = ((green - 128) * contrast + 128) * brightness
+      blue = ((blue - 128) * contrast + 128) * brightness
+    } else if (filterId === 'cool') {
+      const saturation = .88
+      red = gray + (red - gray) * saturation
+      green = gray + (green - gray) * saturation
+      blue = gray + (blue - gray) * saturation
+      red = ((red * .91 - 128) * 1.04 + 128) * 1.03
+      green = ((green * 1.01 - 128) * 1.04 + 128) * 1.03 + 2
+      blue = ((blue * 1.1 - 128) * 1.04 + 128) * 1.03 + 6
+    }
+
+    pixels[index] = clampColor(red)
+    pixels[index + 1] = clampColor(green)
+    pixels[index + 2] = clampColor(blue)
+  }
+
+  context.putImageData(imageData, 0, 0)
+}
+
+function dataUrlToBlob(source) {
+  const [header, encodedData] = source.split(',')
+  const mimeType = header.match(/data:([^;]+)/)?.[1] || 'image/png'
+  const binary = window.atob(encodedData)
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+  return new Blob([bytes], { type: mimeType })
+}
+
+function isAppleMobileDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+async function saveImageToDevice(source, filename) {
+  const blob = source.startsWith('data:')
+    ? dataUrlToBlob(source)
+    : await fetch(source).then((response) => response.blob())
+
+  if (isAppleMobileDevice() && window.File && navigator.share) {
+    const file = new File([blob], filename, { type: blob.type || 'image/png' })
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'NONGEVE Photobooth' })
+      return 'shared'
+    }
+  }
+
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  link.rel = 'noopener'
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000)
+  return 'saved'
 }
 
 function Brand({ onClick }) {
@@ -519,13 +622,13 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
     }
 
     context.save()
-    context.filter = captureFilter.css
     if (facingMode === 'user') {
       context.translate(canvas.width, 0)
       context.scale(-1, 1)
     }
     context.drawImage(video, sx, sy, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height)
     context.restore()
+    applyPhotoFilter(context, canvas.width, canvas.height, captureFilter.id)
 
     setFlashColor(FLASH_COLORS[captureFilter.id] || FLASH_COLORS.normal)
     setIsFlashing(true)
@@ -762,6 +865,7 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
   const [isPlaced, setIsPlaced] = useState(false)
   const [openCardUrl, setOpenCardUrl] = useState('')
   const [copyStatus, setCopyStatus] = useState('idle')
+  const [saveStatus, setSaveStatus] = useState('idle')
   const [previousCards] = useState(() => historyCards)
   const hasArchivedRef = useRef(false)
 
@@ -786,19 +890,33 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [])
 
-  const download = (source = cardUrl) => {
+  const download = async (source = cardUrl) => {
     if (!source) return
-    const link = document.createElement('a')
-    link.href = source
-    link.download = `loopgroup-${template.id}-photos-${Date.now()}.png`
-    link.click()
+    setSaveStatus('saving')
+    try {
+      const result = await saveImageToDevice(
+        source,
+        `nongeve-${template.id}-photos-${Date.now()}.png`,
+      )
+      setSaveStatus(result)
+      window.setTimeout(() => setSaveStatus('idle'), 2200)
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        setSaveStatus('idle')
+      } else {
+        setSaveStatus('failed')
+        window.setTimeout(() => setSaveStatus('idle'), 2600)
+      }
+    }
   }
 
   const copyImage = async (source = cardUrl) => {
     if (!source) return
     try {
       if (!window.ClipboardItem || !navigator.clipboard?.write) throw new Error('Clipboard image API unavailable')
-      const blob = await fetch(source).then((response) => response.blob())
+      const blob = source.startsWith('data:')
+        ? dataUrlToBlob(source)
+        : await fetch(source).then((response) => response.blob())
       await navigator.clipboard.write([new window.ClipboardItem({ [blob.type]: blob })])
       setCopyStatus('copied')
       window.setTimeout(() => setCopyStatus('idle'), 1800)
@@ -811,6 +929,10 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
   const copyLabel = copyStatus === 'copied'
     ? 'COPIED!'
     : copyStatus === 'failed' ? 'COPY NOT SUPPORTED' : 'COPY IMAGE'
+  const saveLabel = saveStatus === 'saving'
+    ? 'PREPARING...'
+    : saveStatus === 'saved' ? 'SAVED!'
+      : saveStatus === 'shared' ? 'SHARED!' : saveStatus === 'failed' ? 'TRY AGAIN' : 'SAVE IMAGE'
 
   const handleBoothCardClick = () => {
     if (!isPlaced) {
@@ -833,7 +955,7 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
           <h1>Keep this<br />moment.</h1>
           <p>แตะรูปที่พิมพ์ออกมาเพื่อนำไปติดบนประตู<br />แล้วแตะอีกครั้งเพื่อดูแบบเต็มจอ</p>
           <div className="result-actions">
-            <button className="figma-button" type="button" onClick={download} disabled={!cardUrl}>DOWNLOAD</button>
+            <button className="figma-button" type="button" onClick={() => download()} disabled={!cardUrl || saveStatus === 'saving'}>{saveLabel}</button>
             <button className="text-button" type="button" onClick={() => copyImage()} disabled={!cardUrl}>{copyLabel}</button>
             <button className="text-button" type="button" onClick={onRetake}>TAKE AGAIN</button>
           </div>
@@ -858,7 +980,7 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
           <button className="modal-close" type="button" onClick={() => setOpenCardUrl('')} aria-label="ปิด">×</button>
           <img src={openCardUrl} alt={`การ์ดภาพถ่าย ${template.id} รูปแบบเต็มจอ`} onClick={(event) => event.stopPropagation()} />
           <button className="figma-button modal-copy" type="button" onClick={(event) => { event.stopPropagation(); copyImage(openCardUrl) }}>{copyLabel}</button>
-          <button className="figma-button modal-download" type="button" onClick={(event) => { event.stopPropagation(); download(openCardUrl) }}>DOWNLOAD</button>
+          <button className="figma-button modal-download" type="button" disabled={saveStatus === 'saving'} onClick={(event) => { event.stopPropagation(); download(openCardUrl) }}>{saveLabel}</button>
         </div>
       )}
     </main>
