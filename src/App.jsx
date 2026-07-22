@@ -3,11 +3,18 @@ import logo from './assets/logo_loopGroup.png'
 import card3 from './assets/photocard-3pic.png'
 import card6 from './assets/photocard-6pic.png'
 import card9 from './assets/photocard-9pic-id.png'
+import bgBlackDot from './assets/bg/bg_black_dot.webp'
+import bgGridPurple from './assets/bg/bg_grid_purple.png'
+import bgGridPurplePink from './assets/bg/bg_grid_purplepink.png'
+import bgGridRed from './assets/bg/bg_grid_red.png'
+import bgGridYellow from './assets/bg/bg_grid_yellow.png'
+import bgWhiteDot from './assets/bg/bg_white_dot.jpg'
 import './App.css'
 
 const TEMPLATES = [
   {
     id: 3,
+    photoCount: 3,
     label: '3 PHOTOS',
     asset: card3,
     width: 361,
@@ -21,6 +28,7 @@ const TEMPLATES = [
   },
   {
     id: 6,
+    photoCount: 6,
     label: '6 PHOTOS',
     asset: card6,
     width: 642,
@@ -37,6 +45,7 @@ const TEMPLATES = [
   },
   {
     id: 9,
+    photoCount: 9,
     label: '9 PHOTOS',
     asset: card9,
     width: 684,
@@ -54,6 +63,47 @@ const TEMPLATES = [
       { x: 463, y: 630, width: 167, height: 253 },
     ],
   },
+  {
+    id: '1-rounded',
+    photoCount: 1,
+    label: '1 PHOTO — ROUND',
+    asset: null,
+    width: 486,
+    height: 765,
+    columns: 1,
+    radius: 36,
+    slots: [
+      { x: 0, y: 0, width: 486, height: 765, radius: 36 },
+    ],
+  },
+  {
+    id: '1-oval',
+    photoCount: 1,
+    label: '1 PHOTO — OVAL',
+    asset: null,
+    width: 486,
+    height: 765,
+    columns: 1,
+    radius: 40,
+    slots: [
+      { x: 22.5, y: 44, width: 441, height: 677, oval: true },
+    ],
+  },
+]
+
+const FRAME_STYLES = [
+  { id: 'white', label: 'WHITE', value: '#F9F9F9' },
+  { id: 'red', label: 'RED', value: '#C91616' },
+  { id: 'blue', label: 'BLUE', value: '#002999' },
+  { id: 'orange', label: 'ORANGE', value: '#FA932C' },
+  { id: 'pink', label: 'PINK', value: '#FFC6E0' },
+  { id: 'black', label: 'BLACK', value: '#000000' },
+  { id: 'grid-purple', label: 'PURPLE GRID', image: bgGridPurple },
+  { id: 'grid-pink', label: 'PINK GRID', image: bgGridPurplePink },
+  { id: 'grid-red', label: 'RED GRID', image: bgGridRed },
+  { id: 'grid-yellow', label: 'YELLOW GRID', image: bgGridYellow },
+  { id: 'white-dot', label: 'WHITE DOT', image: bgWhiteDot },
+  { id: 'black-dot', label: 'BLACK DOT', image: bgBlackDot },
 ]
 
 const FILTERS = [
@@ -87,6 +137,7 @@ const FLASH_COLORS = {
 
 const FEATURE_LIST = [
   { icon: '◉', title: 'PRIVATE PHOTOBOOTH', copy: 'Photos are created and kept on this device only.' },
+  { icon: '▢', title: 'COLOR FRAMES', copy: 'Choose a one, three, six, or nine-photo layout in six frame colors.' },
   { icon: '✦', title: 'RANDOM FILTER', copy: 'Turn it on to get a surprise filter on every snap.' },
   { icon: '♫', title: 'BOOTH SOUNDS', copy: 'Choose from Classic, Soft, and Retro shutter sounds—or go completely silent.' },
   { icon: '▣', title: 'PHOTO BOARD', copy: 'Keep every finished strip on your board and shake it into a new arrangement.' },
@@ -95,6 +146,28 @@ const FEATURE_LIST = [
 ]
 
 const UPDATE_LOG = [
+  {
+    date: '23 JUL 2026',
+    version: 'v0.6 — RESPONSIVE VIEWPORT UPDATE',
+    items: [
+      'Rebuilt the mobile booth so every main screen fits within the visible viewport without vertical scrolling.',
+      'Kept the camera, shutter controls, filters, frame picker, and card preview visible within one screen.',
+      'Added a dedicated compact layout for phones used in landscape orientation.',
+      'Replaced expanding mobile page transitions with calmer fade animations to reduce distracting screen movement.',
+      'Preserved the existing desktop layout while improving mobile responsiveness.',
+    ],
+  },
+  {
+    date: '22 JUL 2026',
+    version: 'v0.5 — COLOR FRAME UPDATE',
+    items: [
+      'Added rounded and oval one-photo frames.',
+      'Added white, red, blue, orange, pink, and black frame colors.',
+      'Added six special grid and polka-dot frame backgrounds.',
+      'Reduced the one-photo preview to match the visual size of the other cards.',
+      'Frame colors now appear in the camera preview and the exported PNG.',
+    ],
+  },
   {
     date: '18 JUL 2026',
     version: 'v0.4 — MOBILE RELIABILITY UPDATE',
@@ -296,6 +369,32 @@ function Brand({ onClick }) {
   )
 }
 
+function FramePreview({ template, color = '#F9F9F9', className = '' }) {
+  return (
+    <div
+      className={`generated-frame-preview ${className}`}
+      style={{
+        aspectRatio: `${template.width} / ${template.height}`,
+        background: color,
+        borderRadius: template.radius ? `${(template.radius / template.width) * 100}%` : '1px',
+      }}
+    >
+      {template.slots.map((slot, index) => (
+        <span
+          key={index}
+          style={{
+            left: `${(slot.x / template.width) * 100}%`,
+            top: `${(slot.y / template.height) * 100}%`,
+            width: `${(slot.width / template.width) * 100}%`,
+            height: `${(slot.height / template.height) * 100}%`,
+            borderRadius: slot.oval ? '50%' : slot.radius ? `${(slot.radius / slot.width) * 100}%` : 0,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 function BoothSurface({ historyCards = [], onBoardClick, positions = HISTORY_POSITIONS }) {
   const BoardElement = onBoardClick ? 'button' : 'div'
   return (
@@ -480,8 +579,10 @@ function TemplatePage({ historyCards, onHome, onSelect, silentMode }) {
               }`}
               type="button" key={template.id} onClick={() => handleSelect(template)}
             >
-              <span className="template-image-wrap">
-                <img src={template.asset} alt={`เทมเพลต ${template.id} รูป`} />
+              <span className={`template-image-wrap ${template.photoCount === 1 ? 'template-image-wrap--1' : ''}`}>
+                {template.asset
+                  ? <img src={template.asset} alt={`เทมเพลต ${template.photoCount} รูป`} />
+                  : <FramePreview template={template} />}
               </span>
             </button>
           ))}
@@ -516,7 +617,9 @@ function TemplatePage({ historyCards, onHome, onSelect, silentMode }) {
       )}
       {selectedTemplate && (
         <div className="template-zoom-overlay" aria-hidden="true">
-          <img src={selectedTemplate.asset} alt="" />
+          {selectedTemplate.asset
+            ? <img src={selectedTemplate.asset} alt="" />
+            : <FramePreview template={selectedTemplate} className="template-generated-zoom" />}
         </div>
       )}
     </main>
@@ -533,6 +636,7 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
   const [cameraAttempt, setCameraAttempt] = useState(0)
   const [facingMode, setFacingMode] = useState('user')
   const [photos, setPhotos] = useState([])
+  const [frameStyle, setFrameStyle] = useState(FRAME_STYLES[0])
   const [filterId, setFilterId] = useState('normal')
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [randomFilterEnabled, setRandomFilterEnabled] = useState(false)
@@ -638,17 +742,17 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
     const photo = canvas.toDataURL('image/jpeg', .94)
     const nextPhotos = [...photos, photo]
     setPhotos(nextPhotos)
-    if (nextPhotos.length === template.id) {
+    if (nextPhotos.length === template.photoCount) {
       window.setTimeout(() => playBoothSound('ding', soundStyle, silentMode), 260)
       window.setTimeout(() => {
         streamRef.current?.getTracks().forEach((track) => track.stop())
-        onComplete(nextPhotos)
+        onComplete(nextPhotos, frameStyle)
       }, 550)
     }
   }
 
   const capturePhoto = () => {
-    if (cameraState !== 'ready' || countdown !== null || photos.length >= template.id) return
+    if (cameraState !== 'ready' || countdown !== null || photos.length >= template.photoCount) return
     if (!timerEnabled) {
       takeSnapshot()
       return
@@ -698,31 +802,52 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
           <div
             className="capture-template-card"
             style={{
-              width: template.id === 3 ? '74%' : '100%',
+              width: template.photoCount === 3 || template.photoCount === 1 ? '74%' : '100%',
               aspectRatio: `${template.width} / ${template.height}`,
+              background: frameStyle.image
+                ? `url(${frameStyle.image}) center / cover no-repeat`
+                : frameStyle.value,
+              borderRadius: template.radius ? `${(template.radius / template.width) * 100}%` : '1px',
             }}
           >
-            <img className="capture-template-art" src={template.asset} alt="" />
-            {template.slots.map((slot, index) => photos[index] && (
+            {template.slots.map((slot, index) => (
               <button
                 type="button"
-                className="capture-template-slot"
+                className={`capture-template-slot ${photos[index] ? 'has-photo' : 'is-empty'}`}
                 key={index}
-                disabled={countdown !== null}
-                onClick={() => setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))}
-                aria-label={`ลบรูปที่ ${index + 1} แล้วถ่ายใหม่`}
+                disabled={!photos[index] || countdown !== null}
+                onClick={() => photos[index] && setPhotos((current) => current.filter((_, photoIndex) => photoIndex !== index))}
+                aria-label={photos[index] ? `ลบรูปที่ ${index + 1} แล้วถ่ายใหม่` : `ช่องรูปที่ ${index + 1}`}
                 style={{
                   left: `${(slot.x / template.width) * 100}%`,
                   top: `${(slot.y / template.height) * 100}%`,
                   width: `${(slot.width / template.width) * 100}%`,
                   height: `${(slot.height / template.height) * 100}%`,
+                  borderRadius: slot.oval ? '50%' : slot.radius ? `${(slot.radius / slot.width) * 100}%` : 0,
                 }}
               >
-                <img src={photos[index]} alt="" />
+                {photos[index] && <img src={photos[index]} alt="" />}
               </button>
             ))}
           </div>
           <p>CLICK A PHOTO TO RETAKE</p>
+          <div className="frame-color-picker" aria-label="Choose frame color">
+            {FRAME_STYLES.map((frame) => (
+              <button
+                type="button"
+                key={frame.id}
+                className={frameStyle.id === frame.id ? 'is-active' : ''}
+                style={{
+                  background: frame.image
+                    ? `url(${frame.image}) center / cover no-repeat`
+                    : frame.value,
+                }}
+                onClick={() => setFrameStyle(frame)}
+                aria-label={`${frame.label} frame`}
+                aria-pressed={frameStyle.id === frame.id}
+              />
+            ))}
+          </div>
         </aside>
 
         <section className="camera-section">
@@ -844,22 +969,73 @@ function drawCover(context, image, slot) {
     sourceHeight = image.width / targetRatio
     sy = (image.height - sourceHeight) / 2
   }
+  context.save()
+  if (slot.oval) {
+    context.beginPath()
+    context.ellipse(
+      slot.x + slot.width / 2,
+      slot.y + slot.height / 2,
+      slot.width / 2,
+      slot.height / 2,
+      0,
+      0,
+      Math.PI * 2,
+    )
+    context.closePath()
+    context.clip()
+  } else if (slot.radius) {
+    traceRoundedRect(context, slot.x, slot.y, slot.width, slot.height, slot.radius)
+    context.clip()
+  }
   context.drawImage(image, sx, sy, sourceWidth, sourceHeight, slot.x, slot.y, slot.width, slot.height)
+  context.restore()
 }
 
-async function composePhotoCard(photos, template) {
-  const [cardImage, ...photoImages] = await Promise.all([loadImage(template.asset), ...photos.map(loadImage)])
+function traceRoundedRect(context, x, y, width, height, radius) {
+  const safeRadius = Math.min(radius, width / 2, height / 2)
+  context.beginPath()
+  context.moveTo(x + safeRadius, y)
+  context.lineTo(x + width - safeRadius, y)
+  context.quadraticCurveTo(x + width, y, x + width, y + safeRadius)
+  context.lineTo(x + width, y + height - safeRadius)
+  context.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height)
+  context.lineTo(x + safeRadius, y + height)
+  context.quadraticCurveTo(x, y + height, x, y + height - safeRadius)
+  context.lineTo(x, y + safeRadius)
+  context.quadraticCurveTo(x, y, x + safeRadius, y)
+  context.closePath()
+}
+
+function fillRoundedRect(context, x, y, width, height, radius, color) {
+  traceRoundedRect(context, x, y, width, height, radius)
+  context.fillStyle = color
+  context.fill()
+}
+
+async function composePhotoCard(photos, template, frameStyle) {
+  const [backgroundImage, ...photoImages] = await Promise.all([
+    frameStyle.image ? loadImage(frameStyle.image) : Promise.resolve(null),
+    ...photos.map(loadImage),
+  ])
   const canvas = document.createElement('canvas')
-  canvas.width = cardImage.width
-  canvas.height = cardImage.height
+  canvas.width = template.width
+  canvas.height = template.height
   const context = canvas.getContext('2d')
   context.clearRect(0, 0, canvas.width, canvas.height)
-  context.drawImage(cardImage, 0, 0)
+  if (backgroundImage) {
+    context.save()
+    traceRoundedRect(context, 0, 0, canvas.width, canvas.height, template.radius || 1)
+    context.clip()
+    drawCover(context, backgroundImage, { x: 0, y: 0, width: canvas.width, height: canvas.height })
+    context.restore()
+  } else {
+    fillRoundedRect(context, 0, 0, canvas.width, canvas.height, template.radius || 1, frameStyle.value)
+  }
   photoImages.forEach((image, index) => drawCover(context, image, template.slots[index]))
   return canvas.toDataURL('image/png')
 }
 
-function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetake, silentMode }) {
+function ResultPage({ template, photos, frameStyle, historyCards, onArchive, onHome, onRetake, silentMode }) {
   const [cardUrl, setCardUrl] = useState('')
   const [isPrinted, setIsPrinted] = useState(false)
   const [isPlaced, setIsPlaced] = useState(false)
@@ -871,11 +1047,11 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
 
   useEffect(() => {
     let active = true
-    composePhotoCard(photos, template).then((url) => {
+    composePhotoCard(photos, template, frameStyle).then((url) => {
       if (active) setCardUrl(url)
     })
     return () => { active = false }
-  }, [photos, template])
+  }, [photos, template, frameStyle])
 
   useEffect(() => {
     if (!cardUrl) return undefined
@@ -896,7 +1072,7 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
     try {
       const result = await saveImageToDevice(
         source,
-        `nongeve-${template.id}-photos-${Date.now()}.png`,
+        `nongeve-${template.photoCount}-photos-${Date.now()}.png`,
       )
       setSaveStatus(result)
       window.setTimeout(() => setSaveStatus('idle'), 2200)
@@ -939,7 +1115,7 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
       setIsPlaced(true)
       if (!hasArchivedRef.current) {
         hasArchivedRef.current = true
-        onArchive({ url: cardUrl, templateId: template.id })
+        onArchive({ url: cardUrl, templateId: template.photoCount })
       }
       return
     }
@@ -964,12 +1140,12 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
         <div className={`booth-wrap ${cardUrl && !isPrinted ? 'is-printing' : ''}`}>
           <BoothSurface historyCards={previousCards} />
           <button
-            className={`booth-card booth-card--${template.id} ${cardUrl ? 'is-ready' : ''} ${isPlaced ? 'is-placed' : ''}`}
+            className={`booth-card booth-card--${template.photoCount} ${cardUrl ? 'is-ready' : ''} ${isPlaced ? 'is-placed' : ''}`}
             type="button"
             disabled={!isPrinted}
             onClick={handleBoothCardClick}
           >
-            {cardUrl ? <img src={cardUrl} alt={`การ์ดภาพถ่าย ${template.id} รูป`} /> : <span className="loader" />}
+            {cardUrl ? <img src={cardUrl} alt={`การ์ดภาพถ่าย ${template.photoCount} รูป`} /> : <span className="loader" />}
           </button>
           {isPrinted && <span className={`card-hint ${isPlaced ? 'is-placed' : ''}`}>{isPlaced ? 'CLICK PHOTO TO VIEW' : 'CLICK TO PLACE ON DOOR'}</span>}
         </div>
@@ -978,7 +1154,7 @@ function ResultPage({ template, photos, historyCards, onArchive, onHome, onRetak
       {openCardUrl && (
         <div className="photo-modal" role="dialog" aria-modal="true" aria-label="ดูรูปเต็มจอ" onClick={() => setOpenCardUrl('')}>
           <button className="modal-close" type="button" onClick={() => setOpenCardUrl('')} aria-label="ปิด">×</button>
-          <img src={openCardUrl} alt={`การ์ดภาพถ่าย ${template.id} รูปแบบเต็มจอ`} onClick={(event) => event.stopPropagation()} />
+          <img src={openCardUrl} alt={`การ์ดภาพถ่าย ${template.photoCount} รูปแบบเต็มจอ`} onClick={(event) => event.stopPropagation()} />
           <button className="figma-button modal-copy" type="button" onClick={(event) => { event.stopPropagation(); copyImage(openCardUrl) }}>{copyLabel}</button>
           <button className="figma-button modal-download" type="button" disabled={saveStatus === 'saving'} onClick={(event) => { event.stopPropagation(); download(openCardUrl) }}>{saveLabel}</button>
         </div>
@@ -991,6 +1167,7 @@ export default function App() {
   const [view, setView] = useState('start')
   const [template, setTemplate] = useState(null)
   const [photos, setPhotos] = useState([])
+  const [frameStyle, setFrameStyle] = useState(FRAME_STYLES[0])
   const [sessionCards, setSessionCards] = useState([])
   const [silentMode, setSilentMode] = useState(false)
 
@@ -1003,6 +1180,7 @@ export default function App() {
   const chooseTemplate = (selected) => {
     setTemplate(selected)
     setPhotos([])
+    setFrameStyle(FRAME_STYLES[0])
     setView('camera')
   }
 
@@ -1015,10 +1193,10 @@ export default function App() {
 
   if (view === 'templates') return <TemplatePage historyCards={sessionCards} onHome={goHome} onSelect={chooseTemplate} silentMode={silentMode} />
   if (view === 'camera' && template) {
-    return <CameraPage template={template} onBack={() => setView('templates')} onComplete={(captured) => { setPhotos(captured); setView('result') }} silentMode={silentMode} setSilentMode={setSilentMode} />
+    return <CameraPage template={template} onBack={() => setView('templates')} onComplete={(captured, selectedFrameStyle) => { setPhotos(captured); setFrameStyle(selectedFrameStyle); setView('result') }} silentMode={silentMode} setSilentMode={setSilentMode} />
   }
   if (view === 'result' && template) {
-    return <ResultPage template={template} photos={photos} historyCards={sessionCards} onArchive={archiveCard} onHome={goHome} onRetake={() => { setPhotos([]); setView('camera') }} silentMode={silentMode} />
+    return <ResultPage template={template} photos={photos} frameStyle={frameStyle} historyCards={sessionCards} onArchive={archiveCard} onHome={goHome} onRetake={() => { setPhotos([]); setView('camera') }} silentMode={silentMode} />
   }
   if (view === 'updates') return <UpdatesPage onHome={goHome} />
   return <StartPage onStart={() => setView('templates')} onUpdates={() => setView('updates')} />

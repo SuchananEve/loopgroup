@@ -95,10 +95,12 @@
 .template-content { width: min(1120px, calc(100% - 64px)); margin: 0 auto;  text-align: center; }
 .template-content h1,
 .result-copy h1 { margin: 10px 0 0; font-family: 'Inika', Georgia, serif; font-size: clamp(36px, 4vw, 58px); font-weight: 400; letter-spacing: -.04em; }
-.figma-template-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; align-items: end; margin-top: 48px; }
+.figma-template-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; align-items: end; margin-top: 48px; }
 .figma-template { min-width: 0; border: 0; background: transparent; padding: 0 20px 16px; cursor: pointer; display: grid; justify-items: center; gap: 9px; }
 .template-image-wrap { height: 430px; width: 100%; display: flex; align-items: center; justify-content: center; transition: height 650ms cubic-bezier(.22, 1, .36, 1), transform .35s ease; }
 .template-image-wrap img { max-width: 100%; max-height: 100%; filter: drop-shadow(0 18px 22px rgba(0,0,0,.11)); }
+.generated-frame-preview { position: relative; height: 100%; max-width: 100%; overflow: hidden; filter: drop-shadow(0 18px 22px rgba(0,0,0,.11)); }
+.generated-frame-preview > span { position: absolute; display: block; background: #d9d9d9; }
 .figma-template:hover .template-image-wrap { transform: translateY(-10px) rotate(-1deg); }
 .figma-template strong { margin-top: 8px; font: 700 11px/1 'Mali', sans-serif; letter-spacing: .16em; }
 .figma-template > span:last-child { color: var(--brown); font: 700 9px/1 'Mali', sans-serif; letter-spacing: .1em; transform: translateY(4px); transition: opacity .25s ease, transform .25s ease; }
@@ -116,6 +118,10 @@
 .capture-template-slot { position: absolute; z-index: 1; margin: 0; padding: 0; border: 0; overflow: hidden; background: #ddd; cursor: pointer; }
 .capture-template-slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .capture-template-slot:disabled { cursor: wait; }
+.capture-template-slot.is-empty:disabled { opacity: 1; cursor: default; }
+.frame-color-picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; }
+.frame-color-picker button { width: 22px; height: 22px; padding: 0; border: 3px solid #fff; border-radius: 50%; background: var(--frame-swatch); box-shadow: 0 0 0 1px #c8c0ba; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.frame-color-picker button.is-active { transform: scale(1.18); box-shadow: 0 0 0 2px var(--brown); }
 
 .camera-section { max-width: 880px; }
 .live-camera { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #e2e0dd; }
@@ -187,10 +193,12 @@ video.is-mirrored { transform: scaleX(-1); }
 .booth-card.is-ready img { animation: print-card 2.6s cubic-bezier(.22,.78,.24,1) .2s both; }
 .booth-wrap.is-printing .booth-card { animation: paper-rattle .13s linear 2.05s 6; }
 .booth-card--3 { width: 13%; aspect-ratio: 361/932; }
+.booth-card--1 { width: 19%; aspect-ratio: 486/765; border-radius: 5%; }
 .booth-card--6 { aspect-ratio: 642/932; }
 .booth-card--9 { aspect-ratio: 684/932; }
 .booth-card.is-placed { left: 76.9%; top: 50%; width: 32%; overflow: visible; transform: translate(-50%, -50%) rotate(-1.5deg); }
 .booth-card--3.is-placed { width: 20%; }
+.booth-card--1.is-placed { width: 27%; }
 .card-hint { position: absolute; z-index: 6; left: 27%; bottom: 2.5%; transform: translateX(-50%); white-space: nowrap; color: #fff; padding: 7px 10px; background: rgba(74,70,66,.68); font: 700 7px/1 'Mali', sans-serif; letter-spacing: .12em; animation: hint 1.7s ease-in-out infinite; backdrop-filter: blur(6px); transition: left .9s cubic-bezier(.22,1,.36,1), bottom .9s cubic-bezier(.22,1,.36,1); }
 .card-hint.is-placed { left: 76.9%; bottom: 8%; }
 
@@ -261,6 +269,103 @@ video.is-mirrored { transform: scaleX(-1); }
   .photo-modal > img { max-width: 94vw; max-height: 78vh; }
   .modal-copy { left: 18px; right: auto; bottom: 18px; }
   .modal-download { left: auto; right: 18px; bottom: 18px; transform: none; }
+}
+
+/* A rotated phone still needs to behave like the mobile booth, even though its
+   CSS width is wider than the portrait breakpoint. */
+@media (min-width: 701px) and (max-width: 950px) and (max-height: 500px) {
+  .start-page,
+  .template-page,
+  .camera-page,
+  .result-page {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .camera-page .minimal-header {
+    height: 52px;
+  }
+
+  .camera-layout {
+    width: calc(100% - 20px);
+    height: calc(100dvh - 52px);
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 12px;
+    padding-top: 4px;
+    overflow: hidden;
+  }
+
+  .capture-template-preview {
+    min-height: 0;
+    gap: 5px;
+    padding-top: 0;
+    overflow: hidden;
+  }
+
+  .capture-template-card {
+    max-height: 255px;
+  }
+
+  .frame-color-picker {
+    gap: 5px;
+  }
+
+  .frame-color-picker button {
+    width: 17px;
+    height: 17px;
+    border-width: 2px;
+  }
+
+  .camera-section {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .live-camera {
+    height: 218px;
+    aspect-ratio: auto;
+  }
+
+  .camera-actions {
+    min-height: 58px;
+  }
+
+  .shutter {
+    width: 54px;
+    height: 54px;
+  }
+
+  .filter-section {
+    margin-top: 5px;
+  }
+
+  .booth-feature-controls {
+    flex-wrap: nowrap;
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .booth-feature-controls button {
+    padding: 6px 8px 5px;
+  }
+
+  .filter-list {
+    gap: 6px;
+  }
+
+  .filter-list button {
+    padding-bottom: 2px;
+  }
+
+  .filter-preview {
+    aspect-ratio: 16 / 6;
+  }
+
+  .filter-list small {
+    margin-top: 3px;
+    font-size: 5px;
+  }
 }
 .start-page {
   cursor: pointer;
@@ -396,6 +501,10 @@ video.is-mirrored { transform: scaleX(-1); }
 
 .template-page .figma-template-grid {
   margin-top: 14px;
+}
+
+.template-page .template-image-wrap--1 {
+  height: 330px;
 }
 
 .template-page > .template-content.is-closed .figma-template-grid {
@@ -548,6 +657,16 @@ video.is-mirrored { transform: scaleX(-1); }
   animation: template-zoom 750ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+.template-zoom-overlay .template-generated-zoom {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(280px, 55vw);
+  height: auto;
+  max-height: 75vh;
+  animation: template-zoom 750ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 @keyframes template-zoom {
   0% {
     opacity: 0;
@@ -578,5 +697,207 @@ video.is-mirrored { transform: scaleX(-1); }
   100% {
     opacity: 1;
     clip-path: circle(150% at 50% 50%);
+  }
+}
+
+/* Mobile app viewport: keep every booth step inside one screen. */
+@media (max-width: 700px) {
+  .start-page,
+  .template-page,
+  .camera-page,
+  .result-page {
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .camera-page {
+    padding-bottom: 0;
+  }
+
+  .camera-page.page-enter {
+    animation: mobile-page-fade 280ms ease both;
+  }
+
+  .camera-page .minimal-header {
+    height: 60px;
+  }
+
+  .camera-layout {
+    position: relative;
+    width: 100%;
+    height: calc(100dvh - 60px);
+    margin: 0;
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+
+  .camera-section {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .live-camera {
+    flex: 0 0 auto;
+    width: 100%;
+    height: clamp(190px, 39dvh, 350px);
+    margin: 0;
+    aspect-ratio: auto;
+    border-radius: 14px;
+  }
+
+  .camera-actions {
+    min-height: 62px;
+  }
+
+  .filter-section {
+    min-height: 0;
+    margin-top: 8px;
+  }
+
+  .booth-feature-controls {
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-bottom: 7px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .booth-feature-controls::-webkit-scrollbar,
+  .frame-color-picker::-webkit-scrollbar {
+    display: none;
+  }
+
+  .booth-feature-controls button {
+    flex: 0 0 auto;
+    padding: 8px 10px 7px;
+  }
+
+  .filter-list {
+    gap: 7px;
+    padding-bottom: 0;
+  }
+
+  .filter-list button {
+    flex-basis: 76px;
+    padding-bottom: 4px;
+  }
+
+  .filter-preview {
+    aspect-ratio: 16 / 9;
+  }
+
+  .filter-list small {
+    margin-top: 5px;
+    font-size: 6px;
+  }
+
+  .capture-template-preview {
+    order: 2;
+    width: 100%;
+    height: clamp(62px, 10dvh, 82px);
+    min-height: 0;
+    margin: 0;
+    padding: 0 2px;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .capture-template-preview > p {
+    display: none;
+  }
+
+  .capture-template-card {
+    width: auto !important;
+    height: 100%;
+    max-width: 72px;
+    flex: 0 0 auto;
+  }
+
+  .frame-color-picker {
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 4px 2px;
+    overflow-x: auto;
+  }
+
+  .frame-color-picker button {
+    width: 21px;
+    height: 21px;
+    flex: 0 0 21px;
+  }
+
+  .result-header {
+    height: 60px;
+  }
+
+  .result-layout {
+    width: 100%;
+    height: calc(100dvh - 60px);
+    min-height: 0;
+    margin: 0;
+    padding: 6px 12px max(0px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 6px;
+    overflow: hidden;
+  }
+
+  .result-copy h1 {
+    margin-top: 3px;
+    font-size: clamp(30px, 9vw, 42px);
+    line-height: .9;
+  }
+
+  .result-copy > p:not(.tiny-heading) {
+    display: none;
+  }
+
+  .result-actions {
+    margin-top: 10px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 14px;
+  }
+
+  .result-actions .figma-button {
+    min-width: 128px;
+    padding: 10px 16px 9px;
+  }
+
+  .result-layout > .booth-wrap {
+    width: auto;
+    height: 100%;
+    max-width: calc(100vw + 24px);
+    max-height: 100%;
+    margin: 0 auto;
+    aspect-ratio: 928 / 999.61;
+  }
+
+  .template-zoom-overlay img,
+  .template-zoom-overlay .template-generated-zoom {
+    animation: mobile-template-fade 500ms ease forwards;
+  }
+
+  @keyframes mobile-page-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes mobile-template-fade {
+    0% { opacity: 0; transform: translate(-50%, -50%); }
+    35% { opacity: 1; transform: translate(-50%, -50%); }
+    100% { opacity: 0; transform: translate(-50%, -50%); }
   }
 }
