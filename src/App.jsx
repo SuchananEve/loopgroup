@@ -155,9 +155,20 @@ const FEATURE_LIST = [
   { icon: '▣', title: 'PHOTO BOARD', copy: 'Keep every finished strip on your board and shake it into a new arrangement.' },
   { icon: '⧉', title: 'COPY & DOWNLOAD', copy: 'Copy a finished card or save it as a full-quality PNG.' },
   { icon: '◷', title: 'OPTIONAL TIMER', copy: 'Shoot instantly or turn on the 10-second timer when everyone needs time to pose.' },
+  { icon: '✧', title: 'SINGLE PHOTO OVERLAYS', copy: 'Add one of four transparent artworks above a rounded or oval one-photo card.' },
 ]
 
 const UPDATE_LOG = [
+  {
+    date: '24 JUL 2026',
+    version: 'v0.8 — OVERLAY LAYER FIX',
+    items: [
+      'Moved single-photo overlay artwork from inside the photo slot to the top of the complete card.',
+      'Fixed frame colors and special card backgrounds covering parts of the overlay.',
+      'Standardized the layer order as card background, captured photo, then transparent overlay.',
+      'Applied the corrected layer order to both the live card preview and exported PNG.',
+    ],
+  },
   {
     date: '24 JUL 2026',
     version: 'v0.7 — SINGLE PHOTO OVERLAY UPDATE',
