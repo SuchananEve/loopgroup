@@ -9,6 +9,10 @@ import bgGridPurplePink from './assets/bg/bg_grid_purplepink.png'
 import bgGridRed from './assets/bg/bg_grid_red.png'
 import bgGridYellow from './assets/bg/bg_grid_yellow.png'
 import bgWhiteDot from './assets/bg/bg_white_dot.jpg'
+import singleOverlay1 from './assets/fliter/fliter_1.PNG'
+import singleOverlay2 from './assets/fliter/fliter_2.PNG'
+import singleOverlay3 from './assets/fliter/fliter_3.PNG'
+import singleOverlay4 from './assets/fliter/fliter_4.PNG'
 import './App.css'
 
 const TEMPLATES = [
@@ -114,6 +118,14 @@ const FILTERS = [
   { id: 'cool', label: 'COOL', css: 'saturate(.88) hue-rotate(172deg) brightness(1.03) contrast(1.04)' },
 ]
 
+const SINGLE_PHOTO_OVERLAYS = [
+  { id: 'none', label: 'NONE', image: null },
+  { id: 'overlay-1', label: '01', image: singleOverlay1 },
+  { id: 'overlay-2', label: '02', image: singleOverlay2 },
+  { id: 'overlay-3', label: '03', image: singleOverlay3 },
+  { id: 'overlay-4', label: '04', image: singleOverlay4 },
+]
+
 const HISTORY_POSITIONS = [
   { left: '4%', top: '4%', width: '20%', rotate: '-7deg' },
   { left: '31%', top: '7%', width: '23%', rotate: '5deg' },
@@ -146,6 +158,17 @@ const FEATURE_LIST = [
 ]
 
 const UPDATE_LOG = [
+  {
+    date: '24 JUL 2026',
+    version: 'v0.7 — SINGLE PHOTO OVERLAY UPDATE',
+    items: [
+      'Added four transparent photo overlays from the fliter folder for one-photo cards.',
+      'Added a NONE option so the original photo can still be used without an overlay.',
+      'Overlay artwork is locked above the complete card in both the preview and final downloaded PNG, so card backgrounds cannot cover it.',
+      'The complete transparent overlay is fitted to the photo area without cropping edge decorations.',
+      'Rounded and oval cards keep the overlay inside the card edge while allowing it to sit above both the photo and frame background.',
+    ],
+  },
   {
     date: '23 JUL 2026',
     version: 'v0.6 — RESPONSIVE VIEWPORT UPDATE',
@@ -638,6 +661,7 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
   const [photos, setPhotos] = useState([])
   const [frameStyle, setFrameStyle] = useState(FRAME_STYLES[0])
   const [filterId, setFilterId] = useState('normal')
+  const [singleOverlay, setSingleOverlay] = useState(SINGLE_PHOTO_OVERLAYS[0])
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [randomFilterEnabled, setRandomFilterEnabled] = useState(false)
   const [soundStyle, setSoundStyle] = useState('CLASSIC')
@@ -746,7 +770,7 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
       window.setTimeout(() => playBoothSound('ding', soundStyle, silentMode), 260)
       window.setTimeout(() => {
         streamRef.current?.getTracks().forEach((track) => track.stop())
-        onComplete(nextPhotos, frameStyle)
+        onComplete(nextPhotos, frameStyle, singleOverlay)
       }, 550)
     }
   }
@@ -829,6 +853,9 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
                 {photos[index] && <img src={photos[index]} alt="" />}
               </button>
             ))}
+            {photos[0] && template.photoCount === 1 && singleOverlay.image && (
+              <img className="single-photo-overlay" src={singleOverlay.image} alt="" />
+            )}
           </div>
           <p>CLICK A PHOTO TO RETAKE</p>
           <div className="frame-color-picker" aria-label="Choose frame color">
@@ -938,6 +965,33 @@ function CameraPage({ template, onBack, onComplete, silentMode, setSilentMode })
                 </button>
               ))}
             </div>
+            {template.photoCount === 1 && (
+              <div className="single-overlay-picker">
+                <div className="filter-heading">
+                  <span>PHOTO OVERLAY</span>
+                  <small>วางลายบนรูปที่ถ่ายแล้ว</small>
+                </div>
+                <div className="single-overlay-list" aria-label="Choose a single photo overlay">
+                  {SINGLE_PHOTO_OVERLAYS.map((overlay) => (
+                    <button
+                      type="button"
+                      key={overlay.id}
+                      className={singleOverlay.id === overlay.id ? 'is-active' : ''}
+                      onClick={() => setSingleOverlay(overlay)}
+                      aria-label={`${overlay.label} photo overlay`}
+                      aria-pressed={singleOverlay.id === overlay.id}
+                    >
+                      <span>
+                        {overlay.image
+                          ? <img src={overlay.image} alt="" />
+                          : <b>NONE</b>}
+                      </span>
+                      <small>{overlay.label}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
         </section>
@@ -991,6 +1045,16 @@ function drawCover(context, image, slot) {
   context.restore()
 }
 
+function drawPhotoOverlay(context, image, width, height, radius) {
+  context.save()
+  traceRoundedRect(context, 0, 0, width, height, radius || 1)
+  context.clip()
+  // The overlay belongs to the complete card, not the inner photo slot. Drawing
+  // it last guarantees that neither the photo nor the card background can hide it.
+  context.drawImage(image, 0, 0, width, height)
+  context.restore()
+}
+
 function traceRoundedRect(context, x, y, width, height, radius) {
   const safeRadius = Math.min(radius, width / 2, height / 2)
   context.beginPath()
@@ -1012,9 +1076,12 @@ function fillRoundedRect(context, x, y, width, height, radius, color) {
   context.fill()
 }
 
-async function composePhotoCard(photos, template, frameStyle) {
-  const [backgroundImage, ...photoImages] = await Promise.all([
+async function composePhotoCard(photos, template, frameStyle, singleOverlay) {
+  const [backgroundImage, overlayImage, ...photoImages] = await Promise.all([
     frameStyle.image ? loadImage(frameStyle.image) : Promise.resolve(null),
+    template.photoCount === 1 && singleOverlay?.image
+      ? loadImage(singleOverlay.image)
+      : Promise.resolve(null),
     ...photos.map(loadImage),
   ])
   const canvas = document.createElement('canvas')
@@ -1032,10 +1099,19 @@ async function composePhotoCard(photos, template, frameStyle) {
     fillRoundedRect(context, 0, 0, canvas.width, canvas.height, template.radius || 1, frameStyle.value)
   }
   photoImages.forEach((image, index) => drawCover(context, image, template.slots[index]))
+  if (overlayImage) {
+    drawPhotoOverlay(
+      context,
+      overlayImage,
+      canvas.width,
+      canvas.height,
+      template.radius,
+    )
+  }
   return canvas.toDataURL('image/png')
 }
 
-function ResultPage({ template, photos, frameStyle, historyCards, onArchive, onHome, onRetake, silentMode }) {
+function ResultPage({ template, photos, frameStyle, singleOverlay, historyCards, onArchive, onHome, onRetake, silentMode }) {
   const [cardUrl, setCardUrl] = useState('')
   const [isPrinted, setIsPrinted] = useState(false)
   const [isPlaced, setIsPlaced] = useState(false)
@@ -1047,11 +1123,11 @@ function ResultPage({ template, photos, frameStyle, historyCards, onArchive, onH
 
   useEffect(() => {
     let active = true
-    composePhotoCard(photos, template, frameStyle).then((url) => {
+    composePhotoCard(photos, template, frameStyle, singleOverlay).then((url) => {
       if (active) setCardUrl(url)
     })
     return () => { active = false }
-  }, [photos, template, frameStyle])
+  }, [photos, template, frameStyle, singleOverlay])
 
   useEffect(() => {
     if (!cardUrl) return undefined
@@ -1168,6 +1244,7 @@ export default function App() {
   const [template, setTemplate] = useState(null)
   const [photos, setPhotos] = useState([])
   const [frameStyle, setFrameStyle] = useState(FRAME_STYLES[0])
+  const [singleOverlay, setSingleOverlay] = useState(SINGLE_PHOTO_OVERLAYS[0])
   const [sessionCards, setSessionCards] = useState([])
   const [silentMode, setSilentMode] = useState(false)
 
@@ -1175,12 +1252,14 @@ export default function App() {
     setView('start')
     setTemplate(null)
     setPhotos([])
+    setSingleOverlay(SINGLE_PHOTO_OVERLAYS[0])
   }
 
   const chooseTemplate = (selected) => {
     setTemplate(selected)
     setPhotos([])
     setFrameStyle(FRAME_STYLES[0])
+    setSingleOverlay(SINGLE_PHOTO_OVERLAYS[0])
     setView('camera')
   }
 
@@ -1193,10 +1272,10 @@ export default function App() {
 
   if (view === 'templates') return <TemplatePage historyCards={sessionCards} onHome={goHome} onSelect={chooseTemplate} silentMode={silentMode} />
   if (view === 'camera' && template) {
-    return <CameraPage template={template} onBack={() => setView('templates')} onComplete={(captured, selectedFrameStyle) => { setPhotos(captured); setFrameStyle(selectedFrameStyle); setView('result') }} silentMode={silentMode} setSilentMode={setSilentMode} />
+    return <CameraPage template={template} onBack={() => setView('templates')} onComplete={(captured, selectedFrameStyle, selectedOverlay) => { setPhotos(captured); setFrameStyle(selectedFrameStyle); setSingleOverlay(selectedOverlay); setView('result') }} silentMode={silentMode} setSilentMode={setSilentMode} />
   }
   if (view === 'result' && template) {
-    return <ResultPage template={template} photos={photos} frameStyle={frameStyle} historyCards={sessionCards} onArchive={archiveCard} onHome={goHome} onRetake={() => { setPhotos([]); setView('camera') }} silentMode={silentMode} />
+    return <ResultPage template={template} photos={photos} frameStyle={frameStyle} singleOverlay={singleOverlay} historyCards={sessionCards} onArchive={archiveCard} onHome={goHome} onRetake={() => { setPhotos([]); setView('camera') }} silentMode={silentMode} />
   }
   if (view === 'updates') return <UpdatesPage onHome={goHome} />
   return <StartPage onStart={() => setView('templates')} onUpdates={() => setView('updates')} />
